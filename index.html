@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Psychology Explorer — Psychological Theories Across the LLM Lifecycle</title>
+<meta name="description" content="An interactive explorer of how psychological theories inform every stage of LLM development, based on Liu et al. (2026), EACL.">
+<style>
+  :root{
+    --bg:#14161d; --surface:#1d2029; --surface2:#242836; --line:#2e3342;
+    --text:#e8eaf0; --muted:#9aa1b2; --faint:#6b7280;
+    --dev:#e05747; --beh:#ee8a2f; --cog:#e3b23c; --soc:#3fa471; --per:#4d8be8; --psy:#a05fc2;
+    --accent:#ffd966;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  section,footer{scroll-margin-top:70px}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6}
+  h1,h2,h3,.serif{font-family:Georgia,Cambria,"Times New Roman",serif}
+  a{color:var(--per);text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(20,22,29,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;color:var(--text)}
+  .brand .dots{display:flex;gap:4px}
+  .brand .dots span{width:9px;height:9px;border-radius:50%}
+  .nav-links{display:flex;gap:22px;font-size:.92rem}
+  .nav-links a{color:var(--muted);transition:color .15s}
+  .nav-links a:hover{color:var(--text)}
+  @media(max-width:720px){.nav-links{display:none}}
+
+  /* hero */
+  header{padding:84px 0 60px;text-align:center;background:radial-gradient(ellipse 70% 55% at 50% 0%,#232a3d 0%,var(--bg) 70%)}
+  .hero-dots{display:flex;justify-content:center;gap:12px;margin-bottom:28px}
+  .hero-dots span{width:16px;height:16px;border-radius:50%;animation:pop .5s ease both}
+  .hero-dots span:nth-child(2){animation-delay:.06s}.hero-dots span:nth-child(3){animation-delay:.12s}
+  .hero-dots span:nth-child(4){animation-delay:.18s}.hero-dots span:nth-child(5){animation-delay:.24s}
+  .hero-dots span:nth-child(6){animation-delay:.3s}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  header h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.15;margin-bottom:18px}
+  header .sub{color:var(--muted);max-width:720px;margin:0 auto 34px;font-size:1.12rem}
+  .stats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:36px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 26px;min-width:130px}
+  .stat b{display:block;font-size:1.7rem;font-family:Georgia,serif}
+  .stat small{color:var(--muted);font-size:.82rem}
+  .cta{display:inline-block;background:var(--accent);color:#14161d;font-weight:700;padding:12px 28px;border-radius:10px;transition:transform .15s}
+  .cta:hover{transform:translateY(-2px)}
+  .src{margin-top:34px;font-size:.82rem;color:var(--faint);max-width:820px;margin-left:auto;margin-right:auto}
+  .src i{font-style:italic}
+
+  section{padding:70px 0}
+  .kicker{font-size:.78rem;letter-spacing:.18em;font-weight:700;text-transform:uppercase;margin-bottom:10px}
+  h2{font-size:clamp(1.5rem,3vw,2.2rem);margin-bottom:12px}
+  .lead{color:var(--muted);max-width:760px;margin-bottom:36px}
+
+  /* pipeline */
+  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.pipeline{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.pipeline{grid-template-columns:1fr}}
+  .stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;cursor:pointer;transition:transform .15s,border-color .15s}
+  .stage:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .stage .num{font-family:Georgia,serif;font-size:.85rem;color:var(--accent);font-weight:700;letter-spacing:.1em}
+  .stage h3{font-size:1.15rem;margin:6px 0 8px}
+  .stage p{font-size:.88rem;color:var(--muted)}
+  .stage .tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+  .pill i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  /* explorer */
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+  .chip{cursor:pointer;user-select:none;font-size:.85rem;padding:7px 15px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);transition:all .12s;display:inline-flex;align-items:center;gap:7px}
+  .chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .chip:hover{border-color:var(--faint);color:var(--text)}
+  .chip.active{color:#14161d;font-weight:700}
+  .toolbar-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin-right:4px;width:70px}
+  .search{flex:1;min-width:220px}
+  .search input{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:9px 16px;color:var(--text);font-size:.95rem;outline:none}
+  .search input:focus{border-color:var(--accent)}
+  .count{color:var(--faint);font-size:.85rem;margin:14px 2px 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;transition:transform .15s,border-color .15s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-3px)}
+  .card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .card h3{font-size:1.06rem;line-height:1.3}
+  .card .cite{font-size:.78rem;color:var(--faint);margin-bottom:10px}
+  .card p{font-size:.88rem;color:var(--muted)}
+  .badge{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .status{position:absolute;top:0;right:0;font-size:.7rem;font-weight:700;padding:4px 12px;border-bottom-left-radius:10px}
+  .st-full{background:rgba(63,164,113,.18);color:#5fd396}
+  .st-some{background:rgba(227,178,60,.15);color:#e3b23c}
+  .st-none{background:rgba(224,87,71,.16);color:#f08a7c}
+  .card .stages-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+
+  /* modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(10,12,17,.75);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--surface2);border:1px solid var(--line);border-radius:18px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:32px;position:relative}
+  .modal .close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
+  .modal h3{font-size:1.5rem;margin:8px 0 4px}
+  .modal .cite{color:var(--faint);font-size:.88rem;margin-bottom:18px}
+  .modal h4{font-size:.8rem;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin:20px 0 8px}
+  .modal p,.modal li{color:var(--muted);font-size:.95rem}
+  .modal ul{padding-left:20px}
+
+  /* coverage chart */
+  .bars{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .bar-row{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+  @media(max-width:560px){.bar-row{grid-template-columns:100px 1fr}}
+  .bar-row .lbl{font-size:.9rem;text-align:right;color:var(--muted)}
+  .bar-track{display:flex;height:34px;border-radius:8px;overflow:hidden;background:var(--surface)}
+  .seg{display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;min-width:0;transition:width .6s ease}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:20px;font-size:.85rem;color:var(--muted)}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:7px;vertical-align:-1px}
+
+  /* debates accordion */
+  .acc{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:14px;overflow:hidden}
+  .acc button{width:100%;background:none;border:none;color:var(--text);font-size:1.05rem;font-weight:700;text-align:left;padding:20px 24px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:inherit}
+  .acc button span.arrow{transition:transform .2s;color:var(--faint)}
+  .acc.open button span.arrow{transform:rotate(90deg)}
+  .acc .body{display:none;padding:0 24px 22px;color:var(--muted);font-size:.94rem}
+  .acc.open .body{display:block}
+  .acc .body p{margin-bottom:10px}
+  .callout{background:var(--surface2);border-left:4px solid var(--accent);border-radius:8px;padding:14px 18px;margin:12px 0;font-size:.92rem}
+
+  /* opportunities */
+  .opps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+  .opp{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .opp h3{font-size:1.05rem;margin-bottom:10px;display:flex;align-items:center;gap:9px}
+  .opp h3 i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .opp p{font-size:.88rem;color:var(--muted)}
+
+  footer{border-top:1px solid var(--line);padding:50px 0 60px;font-size:.85rem;color:var(--faint)}
+  footer p{max-width:900px;margin-bottom:12px}
+  footer i{font-style:italic}
+  .footer-legal{margin-top:34px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:.82rem}
+  .footer-legal .sep{color:var(--line)}
+  .footer-legal a{color:var(--muted);border-bottom:1px solid transparent;transition:color .15s,border-color .15s}
+  .footer-legal a:hover{color:var(--per);border-bottom-color:var(--per)}
+  .divider{height:1px;background:var(--line);margin:0 auto;max-width:1180px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand">
+      <span class="dots">
+        <span style="background:var(--dev)"></span><span style="background:var(--beh)"></span><span style="background:var(--cog)"></span>
+        <span style="background:var(--soc)"></span><span style="background:var(--per)"></span><span style="background:var(--psy)"></span>
+      </span>
+      LLM&nbsp;Psychology
+    </div>
+    <div class="nav-links">
+      <a href="#framework">Framework</a>
+      <a href="#explorer">Theory Explorer</a>
+      <a href="#coverage">Coverage</a>
+      <a href="#debates">Debates</a>
+      <a href="#opportunities">Opportunities</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="hero-dots">
+      <span style="background:var(--dev)"></span><span style="background:var(--beh)"></span><span style="background:var(--cog)"></span>
+      <span style="background:var(--soc)"></span><span style="background:var(--per)"></span><span style="background:var(--psy)"></span>
+    </div>
+    <h1>The Psychology Inside<br>Large Language Models</h1>
+    <p class="sub">From Piaget-inspired curricula to operant conditioning in RLHF — explore how theories from six subfields of psychology shape every stage of LLM development.</p>
+    <div class="stats">
+      <div class="stat"><b>227</b><small>papers surveyed</small></div>
+      <div class="stat"><b>6</b><small>psychology subfields</small></div>
+      <div class="stat"><b>4</b><small>lifecycle stages</small></div>
+      <div class="stat"><b id="theory-total">40</b><small>theories mapped</small></div>
+    </div>
+    <a class="cta" href="#explorer">Explore the theories ↓</a>
+    <p class="src">Based on: Liu, Z., Gong, Z., Ai, L., Hui, Z., Chen, R., Leach, C. W., Greene, M. R., &amp; Hirschberg, J. (2026). A review of incorporating psychological theories in LLMs. <i>Proceedings of the 19th Conference of the European Chapter of the Association for Computational Linguistics</i> (pp. 7459–7495).</p>
+  </div>
+</header>
+
+<section id="framework">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--cog)">The Framework</div>
+    <h2>Four Stages, Six Lenses</h2>
+    <p class="lead">The survey maps psychological theory onto the full LLM lifecycle. Click a stage to see its theories in the explorer.</p>
+    <div class="pipeline">
+      <div class="stage" onclick="jumpToStage('Preprocessing')">
+        <div class="num">STAGE 1</div>
+        <h3>Preprocessing</h3>
+        <p>Developmentally realistic data (child-directed speech, ecological validity) and cognitively inspired filtering (selective attention, predictive coding).</p>
+        <div class="tags"><span class="pill"><i style="background:var(--dev)"></i>Developmental</span><span class="pill"><i style="background:var(--cog)"></i>Cognitive</span></div>
+      </div>
+      <div class="stage" onclick="jumpToStage('Pre-training')">
+        <div class="num">STAGE 2</div>
+        <h3>Pre-Training</h3>
+        <p>Curriculum learning as staged cognitive development, scaffolding for coherent learning trajectories, top-down/bottom-up knowledge acquisition.</p>
+        <div class="tags"><span class="pill"><i style="background:var(--dev)"></i>Developmental</span><span class="pill"><i style="background:var(--cog)"></i>Cognitive</span></div>
+      </div>
+      <div class="stage" onclick="jumpToStage('Post-training')">
+        <div class="num">STAGE 3</div>
+        <h3>Post-Training</h3>
+        <p>Working and episodic memory modules in SFT; RLHF as an operationalization of operant conditioning — rewards strengthen preferred behavior.</p>
+        <div class="tags"><span class="pill"><i style="background:var(--beh)"></i>Behavioral</span><span class="pill"><i style="background:var(--cog)"></i>Cognitive</span></div>
+      </div>
+      <div class="stage" onclick="jumpToStage('Evaluation & Application')">
+        <div class="num">STAGE 4</div>
+        <h3>Evaluation &amp; Application</h3>
+        <p>Theory-of-mind benchmarks, psycholinguistic probes, personality consistency, dual-process reasoning, persuasion-aware multi-agent systems.</p>
+        <div class="tags"><span class="pill"><i style="background:var(--soc)"></i>Social</span><span class="pill"><i style="background:var(--per)"></i>Personality</span><span class="pill"><i style="background:var(--psy)"></i>Psycholinguistics</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="explorer">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--soc)">Interactive</div>
+    <h2>Theory Explorer</h2>
+    <p class="lead">Every psychological theory catalogued by the survey — filter by subfield, lifecycle stage, or how deeply the NLP community has explored it. Click any card for details.</p>
+
+    <div class="toolbar">
+      <span class="toolbar-label">Subfield</span>
+      <span class="chip field-chip active" data-field="all">All</span>
+      <span class="chip field-chip" data-field="Developmental"><i style="background:var(--dev)"></i>Developmental</span>
+      <span class="chip field-chip" data-field="Behavioral"><i style="background:var(--beh)"></i>Behavioral</span>
+      <span class="chip field-chip" data-field="Cognitive"><i style="background:var(--cog)"></i>Cognitive</span>
+      <span class="chip field-chip" data-field="Social"><i style="background:var(--soc)"></i>Social</span>
+      <span class="chip field-chip" data-field="Personality"><i style="background:var(--per)"></i>Personality</span>
+      <span class="chip field-chip" data-field="Psycholinguistics"><i style="background:var(--psy)"></i>Psycholinguistics</span>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-label">Stage</span>
+      <span class="chip stage-chip active" data-stage="all">All</span>
+      <span class="chip stage-chip" data-stage="Preprocessing">Preprocessing</span>
+      <span class="chip stage-chip" data-stage="Pre-training">Pre-training</span>
+      <span class="chip stage-chip" data-stage="Post-training">Post-training</span>
+      <span class="chip stage-chip" data-stage="Evaluation & Application">Evaluation &amp; Application</span>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-label">Status</span>
+      <span class="chip status-chip active" data-status="all">All</span>
+      <span class="chip status-chip" data-status="full">✓ Established</span>
+      <span class="chip status-chip" data-status="some">◆ Emerging</span>
+      <span class="chip status-chip" data-status="none">✗ Untapped</span>
+      <span class="search"><input id="q" type="text" placeholder="Search theories, authors, concepts…" aria-label="Search theories"></span>
+    </div>
+
+    <div class="count" id="count"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="coverage">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--per)">By the Numbers</div>
+    <h2>How Much of Psychology Has NLP Actually Used?</h2>
+    <p class="lead">The survey's appendix scores each theory in its taxonomy: <b style="color:#5fd396">✓ established</b> (multiple works), <b style="color:var(--cog)">◆ emerging</b> (fewer than three), or <b style="color:#f08a7c">✗ untapped</b> (none found). Social psychology is the starkest gap — 11 of 18 theories have no identified LLM work.</p>
+    <div class="bars" id="bars"></div>
+    <div class="legend">
+      <span><i style="background:var(--soc)"></i>Established (✓)</span>
+      <span><i style="background:var(--cog)"></i>Emerging (◆)</span>
+      <span><i style="background:var(--dev)"></i>Untapped (✗)</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="debates">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--dev)">Points of Tension</div>
+    <h2>Debates at the NLP–Psychology Border</h2>
+    <p class="lead">Can human psychology be mapped onto LLMs without distortion? Three families of controversy from the survey's discussion.</p>
+
+    <div class="acc open">
+      <button onclick="toggleAcc(this)">Terminology mismatches <span class="arrow">›</span></button>
+      <div class="body">
+        <p><b>“Attention”</b> in psychology means selective mental focus and executive control; in transformers it is a token-weighting mechanism with no cognitive awareness (Lindsay, 2020). <b>“Memory”</b> in psychology implies structured encoding and recall; in LLMs it usually means context windows or weight parameters.</p>
+        <p>Anthropomorphic descriptors of LLM behavior are measurably on the rise (Ibrahim &amp; Cheng, 2025), shaping public and scholarly assumptions. The survey calls for a precise cross-disciplinary lexicon that disentangles metaphor from mechanism.</p>
+      </div>
+    </div>
+
+    <div class="acc">
+      <button onclick="toggleAcc(this)">Theoretical discrepancies <span class="arrow">›</span></button>
+      <div class="body">
+        <p>NLP sometimes imports concepts that are outdated or contested in psychology itself. <b>Predictive coding</b> is a popular analogy for next-token prediction, yet contemporary neuroscience emphasizes hierarchical, multi-scale prediction (Antonello &amp; Huth, 2024; Caucheteux et al., 2023). <b>MBTI</b> persists in LLM studies despite long-standing criticism of its validity and reliability (Pittenger, 1993; McCrae &amp; Costa, 1989).</p>
+        <p>LLM <b>“working memory”</b> modules don't replicate human capacity limits — raising a genuinely open question: should AI emulate human cognitive constraints for interpretability, or exceed them for performance?</p>
+        <p><b>RLHF</b> echoes behaviorism's classic blind spot: optimizing observable reward while neglecting internal states, risking reward hacking (Skalse et al., 2022). And the "stochastic parrots" debate over whether LLMs understand language at all remains unresolved (Bender et al., 2021).</p>
+      </div>
+    </div>
+
+    <div class="acc">
+      <button onclick="toggleAcc(this)">Evaluation &amp; validity <span class="arrow">›</span></button>
+      <div class="body">
+        <div class="callout"><b>The flagship example:</b> GPT-4 solves ~75% of false-belief tasks — matching a six-year-old child (Kosinski, 2024). Emergent theory of mind, or sophisticated pattern matching (Strachan et al., 2024)? Minor prompt changes can derail performance entirely (Shapira et al., 2024).</div>
+        <p>Personality research shows the same tension: some studies find stable simulated traits (Sorokovikova et al., 2024), others find prompt-dependent variability (Gupta et al., 2024) — are personas inherent or mimicked (Tseng et al., 2024)?</p>
+        <p>Psychologists studying LLMs urge stronger construct-validity checks before importing human instruments, and warn against inferring human-like cognition from surface similarity (Abdurahman et al., 2024; Blank, 2023; Cuskley et al., 2024).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="opportunities">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--soc)">What's Next</div>
+    <h2>Untapped Opportunities</h2>
+    <p class="lead">Four areas where the survey argues psychology could push LLM research further.</p>
+    <div class="opps">
+      <div class="opp"><h3><i style="background:var(--soc)"></i>Social psychology</h3><p>Group dynamics, identity, and attitude-change theories (balance theory, cognitive dissonance) are barely used. Inoculation theory (McGuire, 1964) could proactively harden systems against manipulative persuasion.</p></div>
+      <div class="opp"><h3><i style="background:var(--beh)"></i>Behavioral psychology</h3><p>Partial reinforcement (Ferster, 1966) and shaping are overlooked in RLHF. Reward variability could reduce premature convergence and mitigate reward hacking (Amodei et al., 2016).</p></div>
+      <div class="opp"><h3><i style="background:var(--per)"></i>Personality psychology</h3><p>Current work fixates on static trait theory. Developmental accounts of how traits emerge and adapt across contexts could yield more coherent, interpretable personas than prompt-based role-play.</p></div>
+      <div class="opp"><h3><i style="background:var(--cog)"></i>Cognitive psychology</h3><p>Schema theory (Anderson &amp; Pearson, 1984) — knowledge organized into experience-built schemas — could improve long-term context handling, user-history compression, and generalization.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer id="about">
+  <div class="wrap">
+    <p><b style="color:var(--text)">About this site.</b> An educational, interactive companion to the survey <i>A Review of Incorporating Psychological Theories in LLMs</i> by Zizhou Liu, Ziwei Gong, Lin Ai, Zheng Hui, Run Chen, Colin Wayne Leach, Michelle R. Greene, and Julia Hirschberg (EACL 2026, pp. 7459–7495). Theory definitions, exploration statuses, and cited applications are summarized from the survey and its appendix tables; consult the paper for the complete reference list.</p>
+    <p><b style="color:var(--text)">A note on ethics</b> — echoed from the survey's limitations: reinforcement mechanisms that make systems engaging can also condition compulsive use. The authors call for transparent disclosure of reinforcement mechanisms and professional ethical guidelines, and acknowledge psychology's own critiques (WEIRD sampling, individual-level focus).</p>
+    <p style="margin-top:20px">Built as an educational summary · not affiliated with the authors or the ACL.</p>
+    <p class="footer-legal">
+      <span>&copy; 2026</span>
+      <span class="sep" aria-hidden="true">·</span>
+      <span>Dr. Pantaleon Fassbender</span>
+      <span class="sep" aria-hidden="true">·</span>
+      <a href="mailto:leo@twistersmanagementconsultingllc.com">leo@twistersmanagementconsultingllc.com</a>
+    </p>
+  </div>
+</footer>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="close" onclick="closeModal()" aria-label="Close">×</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const FIELD_COLORS = {
+  "Developmental":"var(--dev)","Behavioral":"var(--beh)","Cognitive":"var(--cog)",
+  "Social":"var(--soc)","Personality":"var(--per)","Psycholinguistics":"var(--psy)"
+};
+const STATUS_LABEL = {full:"✓ Established", some:"◆ Emerging", none:"✗ Untapped"};
+const STATUS_CLASS = {full:"st-full", some:"st-some", none:"st-none"};
+const STATUS_DESC = {
+  full:"Multiple surveyed works explicitly leverage or reference this theory.",
+  some:"Fewer than three surveyed works apply this theory — early days.",
+  none:"No LLM work identified in the survey — an open opportunity."
+};
+
+// stages: P=Preprocessing, T=Pre-training, A=Post-training, E=Evaluation & Application
+const THEORIES = [
+// --- Developmental ---
+{n:"Incremental Cognitive Development",f:"Developmental",c:"Piaget (1976)",s:["Pre-training"],st:"full",
+ d:"Children acquire knowledge through sequential tasks of increasing complexity.",
+ how:"A motivating analogy for curriculum learning (Bengio et al., 2009): gradually expanding pre-training tasks (Schulze Buschoff et al., 2023), contradictory historical tasks (Chen et al., 2024), and trial-and-demonstration frameworks (Ma et al., 2025). The survey stresses this is an analogy for sequencing effects, not a claim that next-token prediction is Piagetian."},
+{n:"Scaffolding Theory",f:"Developmental",c:"Park & Reuter-Lorenz (2009)",s:["Pre-training"],st:"some",
+ d:"Learning is enhanced through gradually challenging interactions with appropriate guidance.",
+ how:"Structured feedback loops (Borges et al., 2024) and dynamically adjusted task complexity (Sonkar et al., 2023) maintain coherent learning trajectories."},
+{n:"Incremental Numerical Understanding",f:"Developmental",c:"Piaget (1953)",s:["Preprocessing"],st:"some",
+ d:"Numerical concepts are gradually acquired through structured exposure and experience.",
+ how:"Sequential data collection with mathematically coherent numeric anchors (Sharma et al., 2024)."},
+{n:"Zone of Proximal Development",f:"Developmental",c:"Vygotsky; Wertsch (1988)",s:["Evaluation & Application"],st:"some",
+ d:"Optimal learning occurs in the gap between what a learner can do independently and with assistance.",
+ how:"Used to assess cognitive development and calibrate task difficulty in LLM evaluation (Cui & Sachan, 2025)."},
+{n:"Ecological Validity",f:"Developmental",c:"Schmuckler (2001)",s:["Preprocessing"],st:"some",
+ d:"Real-world data and environments best mimic natural cognitive development.",
+ how:"Linguistically diverse environments (Jagadish et al., 2024), child-directed speech (Feng et al., 2024), and child cartoons (Nikolaus et al., 2022) as training data. Supported by evidence that LLMs can align with human brain responses under biologically plausible training (Hosseini et al., 2024)."},
+{n:"Language Acquisition Theory",f:"Developmental",c:"Chomsky (1980)",s:["Pre-training","Evaluation & Application"],st:"some",
+ d:"Language development follows predictable patterns through exposure to linguistic environments.",
+ how:"Frames developmentally plausible training setups and comparisons between child and model learning trajectories."},
+// --- Cognitive ---
+{n:"Selective Attention",f:"Cognitive",c:"Treisman (1969)",s:["Preprocessing","Evaluation & Application"],st:"full",
+ d:"Cognition prioritizes salient information while filtering out irrelevant stimuli.",
+ how:"A preprocessing model that filters irrelevant training data (Nottingham et al., 2024); with working memory, used to detect hallucinations and extract relations (Chen et al., 2025; Maharaj et al., 2023; Yu et al., 2022)."},
+{n:"Top-Down & Bottom-Up Processing",f:"Cognitive",c:"Gregory (1997)",s:["Pre-training"],st:"full",
+ d:"Perception is an interaction between concept-driven (top-down) and data-driven (bottom-up) processing.",
+ how:"Prioritizing semantic processing before syntactic details (Rawte et al., 2022), generating test cases (Zhang et al., 2024), and fusing bottom-up encoding with top-down corrections (Pang et al., 2023). 'Think step by step' prompting operationalizes top-down reasoning (Kojima et al., 2022)."},
+{n:"Predictive Coding",f:"Cognitive",c:"Rao & Ballard (1999)",s:["Preprocessing"],st:"some",
+ d:"The brain anticipates input based on prior knowledge, updating via prediction errors.",
+ how:"Augmenting BERT-style models with anticipation of subsequent content to improve discourse coherence (Araujo et al., 2021). Debated: modern neuroscience emphasizes hierarchical multi-scale prediction, cautioning against equating it with next-token prediction (Antonello & Huth, 2024)."},
+{n:"Working Memory",f:"Cognitive",c:"Baddeley & Hitch (1974)",s:["Pre-training","Post-training","Evaluation & Application"],st:"full",
+ d:"A limited-capacity system temporarily holds and manipulates information.",
+ how:"Working-memory modules retain short-term information in SFT (Kang et al., 2024; Li et al., 2023); simulated critical-period dynamics with growing capacity (Mita et al., 2025); n-back and cognitive-load benchmarks (Zhang et al., 2024; Fu et al., 2025). Note: LLM versions don't replicate human capacity limits — a live debate."},
+{n:"Episodic & Long-Term Memory",f:"Cognitive",c:"Tulving (1972)",s:["Post-training"],st:"some",
+ d:"Specific experiences are retrievable with their contexts; long-term storage is semantically organized.",
+ how:"Learning from episodic experiences for planning (Zhang et al., 2025), combining episodic + semantic memory for personalization (Zhang et al., 2025), and episodic attention for long contexts (Chaudhury et al., 2025)."},
+{n:"Hippocampal Indexing Theory",f:"Cognitive",c:"Teyler & DiScenna (1986)",s:["Evaluation & Application"],st:"some",
+ d:"The hippocampus acts as a pointer (index) into neocortical memory representations.",
+ how:"Informs multi-step reasoning over external knowledge (Gutierrez et al., 2024; Fang et al., 2025) and counterfactual reasoning (Miao et al., 2024)."},
+{n:"Cognitive Maturity",f:"Cognitive",c:"Ingersoll et al. (1986)",s:["Evaluation & Application"],st:"full",
+ d:"The development and refinement of thinking, reasoning, and problem-solving abilities.",
+ how:"Psychometric assessments of LLM developmental level (Laverghetta Jr. & Licato, 2022; Wang et al., 2025)."},
+{n:"Schema Theory",f:"Cognitive",c:"Anderson & Pearson (1984)",s:[],st:"none",
+ d:"Knowledge is organized into interconnected patterns (schemas) built through repeated experience, guiding inference, memory, and learning.",
+ how:"Largely untapped. Early schema-inspired work compresses user histories and models knowledge-activation cycles (Panagoulias et al., 2024; Xia et al., 2024); the survey flags deeper integration for long-term context handling and generalization."},
+// --- Behavioral ---
+{n:"Classical Conditioning",f:"Behavioral",c:"Pavlov (1927)",s:["Post-training"],st:"some",
+ d:"Learning occurs when a neutral stimulus becomes associated with a meaningful one.",
+ how:"Referenced in behavioral framings of model training dynamics; far less central than operant conditioning."},
+{n:"Operant Conditioning",f:"Behavioral",c:"Skinner (1957); Thorndike (1898)",s:["Post-training"],st:"full",
+ d:"Behavior is strengthened or weakened by its consequences — rewards and punishments.",
+ how:"RLHF operationalizes it: a learned reward model scores outputs and policy updates reinforce high-reward behavior (Christiano et al., 2017; Ouyang et al., 2022). Extensions model cognitive biases (Siththaranjan et al., 2024), personalize rewards (Poddar et al., 2024), or optimize preferences directly (Rafailov et al., 2023). The analogy is conceptual — reward optimization, not psychological intent."},
+{n:"Thorndike's Law of Effect",f:"Behavioral",c:"Thorndike (1927)",s:["Post-training"],st:"some",
+ d:"Behaviors followed by satisfying outcomes are more likely to recur.",
+ how:"A loose analogy for how repeated human feedback shapes model outputs during RLHF (Lambert et al., 2023)."},
+{n:"Premack Principle",f:"Behavioral",c:"Premack (1959)",s:[],st:"none",
+ d:"A preferred activity can reinforce a less preferred one if access is contingent on it.",
+ how:"No identified LLM work — a candidate for creative reward design."},
+// --- Social ---
+{n:"Theory of Mind (ToM)",f:"Social",c:"Baron-Cohen et al. (1985)",s:["Evaluation & Application"],st:"full",
+ d:"The ability to attribute mental states — beliefs, desires, intentions — to oneself and others.",
+ how:"Rich benchmark ecosystem: higher-order reasoning (Wu et al., 2023), interactions (Kim et al., 2023), white lies (Liu et al., 2025), temporally evolving mental states (Xiao et al., 2025), spoken dialogue (Soubki et al., 2024). In agents: perspective-taking, belief tracking, and recursive simulation (Sclar et al., 2023; Wilf et al., 2024). Validity is hotly debated — see the Debates section."},
+{n:"Dual-Process Theory",f:"Social",c:"Kahneman (2011)",s:["Evaluation & Application"],st:"full",
+ d:"Reasoning splits into fast, intuitive System 1 and slow, deliberate System 2.",
+ how:"Chain-of-thought prompting operationalizes System 2 (Wei et al., 2022); DynaThink routes between fast and thorough inference (Pan et al., 2024); Tree of Thoughts explores parallel reasoning paths (Yao et al., 2024); separate verifier models act as System 2 (Yang et al., 2025)."},
+{n:"Self-Reflection & Metacognition",f:"Social",c:"Flavell (1979); Phillips (2020)",s:["Evaluation & Application"],st:"full",
+ d:"Introspection focused on one's own thought processes and self-concept.",
+ how:"Hallucination mitigation (Ji et al., 2023), Self-RAG retrieval critique (Asai et al., 2024), translation, tool use, QA, and math reasoning via iterative self-assessment, task decomposition, self-training, and confidence-tuned rewards."},
+{n:"Conformity Theories",f:"Social",c:"Asch (1951/2016)",s:["Evaluation & Application"],st:"full",
+ d:"Group pressure can alter individual judgments.",
+ how:"Testing collaboration and bias dynamics of LLM agents under group pressure (Choi et al., 2025; Jin et al., 2024; Zhang et al., 2024; Zhu et al., 2025)."},
+{n:"Persuasion Models",f:"Social",c:"Petty & Cacioppo (2012)",s:["Evaluation & Application"],st:"full",
+ d:"Attitude change occurs via central (deliberate) or peripheral (heuristic) processing routes.",
+ how:"Persuasive dialog acts merged with RL (Gollapalli & Ng, 2025), persuasion knowledge in chain-of-thought (Modzelewski et al., 2025), credibility-aware generation (Jin et al., 2024; Qin et al., 2024), and probing LLM vulnerability to persuasion (Zeng et al., 2024)."},
+{n:"Social Identity Theory",f:"Social",c:"Tajfel (1979)",s:["Evaluation & Application"],st:"some",
+ d:"Group membership shapes self-concept and intergroup behavior.",
+ how:"LLMs replicate ingroup favoritism and outgroup hostility (Borah et al., 2025; Hu et al., 2025); prompting models with social identities can reduce bias (Dong et al., 2024)."},
+{n:"Cognitive Dissonance",f:"Social",c:"Festinger; Morvan & O'Connor (2017)",s:["Evaluation & Application"],st:"some",
+ d:"Inconsistency between beliefs or behaviors creates discomfort, prompting attitude change.",
+ how:"Rarely applied; flagged by the survey as relevant to interaction dynamics and bias mitigation."},
+{n:"Attribution Theory",f:"Social",c:"Heider (1946); Fiske & Taylor (2020)",s:[],st:"none",
+ d:"How people infer whether behavior is caused by internal dispositions or external circumstances.",
+ how:"No identified LLM work."},
+{n:"Social Impact Theory",f:"Social",c:"Latané (1981)",s:[],st:"none",
+ d:"Social influence depends on the strength, immediacy, and number of sources.",
+ how:"No identified LLM work — natural fit for multi-agent influence modeling."},
+{n:"Obedience Theories",f:"Social",c:"Milgram (1963)",s:[],st:"none",
+ d:"Authority strongly shapes compliance behavior.",
+ how:"No identified LLM work — relevant to sycophancy and instruction-following dynamics."},
+{n:"Groupthink",f:"Social",c:"Janis (1972)",s:[],st:"none",
+ d:"Desire for conformity and cohesion can suppress dissent and degrade group decisions.",
+ how:"No identified LLM work — a caution for multi-agent consensus systems."},
+{n:"Social Facilitation & Loafing",f:"Social",c:"Zajonc (1965); Latané et al. (1979)",s:[],st:"none",
+ d:"The presence of others can boost performance on simple tasks or reduce individual effort in groups.",
+ how:"No identified LLM work."},
+{n:"Elaboration Likelihood Model",f:"Social",c:"Petty & Cacioppo (2012)",s:[],st:"none",
+ d:"Persuasion route (central vs. peripheral) depends on the recipient's motivation and capacity.",
+ how:"No identified LLM work beyond general persuasion models."},
+{n:"Balance Theory",f:"Social",c:"Heider (1946)",s:[],st:"none",
+ d:"People adjust beliefs to maintain consistency among attitudes and relationships.",
+ how:"No identified LLM work — flagged for attitude-change and bias-mitigation research."},
+{n:"Inoculation Theory",f:"Social",c:"McGuire (1964)",s:[],st:"none",
+ d:"Exposure to weakened counterarguments builds resistance to later persuasion.",
+ how:"No identified LLM work — the survey highlights it for defending users and models against manipulation."},
+{n:"Self-Perception Theory",f:"Social",c:"Bem (1972)",s:[],st:"none",
+ d:"People infer their internal states by observing their own behavior.",
+ how:"No identified LLM work."},
+{n:"Self-Categorization Theory",f:"Social",c:"Turner; Maines (1989)",s:[],st:"none",
+ d:"People classify themselves and others into social groups, shaping norms.",
+ how:"No identified LLM work."},
+{n:"Self-Affirmation Theory",f:"Social",c:"Steele (1988)",s:[],st:"none",
+ d:"People are motivated to maintain self-integrity when the self-concept is threatened.",
+ how:"No identified LLM work."},
+// --- Personality ---
+{n:"Big Five Model (OCEAN)",f:"Personality",c:"Roccas et al. (2002)",s:["Evaluation & Application"],st:"full",
+ d:"Personality along five dimensions: Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism.",
+ how:"Consistency evaluation (Frisch & Giulianelli, 2024), trait-specialization loss for dialogue (Dan et al., 2025), persona rationales (Joshi et al., 2025), negotiation agents where agreeableness helps (Huang & Hadfi, 2024), and Big Five-based extraversion agents in simulation (Han et al., 2024)."},
+{n:"Myers–Briggs Type Indicator (MBTI)",f:"Personality",c:"Myers & Myers (1995)",s:["Evaluation & Application"],st:"full",
+ d:"Classifies individuals into 16 types from four Jungian dichotomies.",
+ how:"Still popular for LLM personality probing (Rao et al., 2023; Yang et al., 2023) and gamified assessment (PsychoGAT, Yang et al., 2024) — despite well-documented validity and reliability problems (Pittenger, 1993; McCrae & Costa, 1989). The survey treats its persistence as a theoretical lag."},
+{n:"Eysenck Personality Questionnaire (EPQR-A)",f:"Personality",c:"Eysenck & Eysenck",s:["Evaluation & Application"],st:"full",
+ d:"A 24-item measure of extraversion, neuroticism, psychoticism, and social desirability.",
+ how:"Language switching measurably alters GPT-4o's EPQR-A traits (Amidei et al., 2025) — a consistency challenge."},
+{n:"Trait Theory",f:"Personality",c:"Cartwright (1979)",s:["Evaluation & Application"],st:"some",
+ d:"Identifies stable personality traits that influence behavior across contexts.",
+ how:"The umbrella for most LLM personality work; the survey urges moving beyond static traits toward developmental accounts."},
+{n:"Humanistic Theory",f:"Personality",c:"Stefaroi (2015)",s:[],st:"none",
+ d:"Emphasizes free will, personal growth, and self-actualization.",
+ how:"No identified LLM work."},
+{n:"Psychoanalytic Theory",f:"Personality",c:"Freud",s:[],st:"none",
+ d:"Personality as dynamic interplay of id, ego, and superego, with unconscious processes central.",
+ how:"No identified LLM work."},
+{n:"Behaviorist Personality Theory",f:"Personality",c:"Pierce & Cheney (2008)",s:[],st:"none",
+ d:"Personality as learned responses shaped by environmental reinforcement.",
+ how:"No identified LLM work."},
+{n:"Social Cognitive Theory",f:"Personality",c:"Spielman et al. (2024)",s:[],st:"none",
+ d:"Expectations, beliefs, and observational learning shape personality and behavior.",
+ how:"No identified LLM work."},
+// --- Psycholinguistics ---
+{n:"Universal Grammar",f:"Psycholinguistics",c:"Chomsky (1957, 1965)",s:["Evaluation & Application"],st:"full",
+ d:"An innate linguistic capacity guides language learning.",
+ how:"Frames syntactic probing of LLMs — garden-path effects (Amouyal et al., 2025), hierarchical structure representations (An et al., 2025), and cross-linguistic morphology tests (Anh et al., 2024)."},
+{n:"Poverty of the Stimulus",f:"Psycholinguistics",c:"Chomsky (1980)",s:["Evaluation & Application"],st:"some",
+ d:"Children acquire complex grammar from remarkably little input.",
+ how:"A benchmark contrast: LLMs need developmentally implausible data volumes to learn morphological rules (Liu et al., 2024), though some learning patterns do mirror human acquisition (Zhou et al., 2025)."},
+{n:"Conversational Implicature",f:"Psycholinguistics",c:"Grice (1975)",s:["Evaluation & Application"],st:"full",
+ d:"Utterance interpretation depends on both literal content and surrounding context.",
+ how:"Pragmatics evaluations reveal persistent LLM failures (Kibria et al., 2024; Zeng et al., 2025), feeding the symbol-grounding debate (Harnad, 1990; Bender & Koller, 2020)."},
+{n:"Garden Path Theory",f:"Psycholinguistics",c:"Frazier & Rayner (1982)",s:["Evaluation & Application"],st:"some",
+ d:"Readers backtrack and reanalyze sentence structure on encountering unexpected elements.",
+ how:"Comparing garden-path effects in humans and language models (Amouyal et al., 2025)."},
+{n:"Constraint-Based Models",f:"Psycholinguistics",c:"MacDonald et al. (1994)",s:["Evaluation & Application"],st:"some",
+ d:"Language processing is interactive and probabilistic, with multiple simultaneous information sources.",
+ how:"Limited application in LLM probing studies."},
+{n:"Good-Enough Processing",f:"Psycholinguistics",c:"Ferreira & Patson (2007)",s:[],st:"none",
+ d:"Comprehension often relies on approximate, semantically focused representations rather than full parses.",
+ how:"No identified LLM work — intriguing for efficiency-focused inference."},
+{n:"Construction–Integration Model",f:"Psycholinguistics",c:"Kintsch (1988)",s:[],st:"none",
+ d:"Text comprehension: generate loosely connected propositions, then filter and integrate them coherently.",
+ how:"No identified LLM work."},
+{n:"WEAVER++ (Speech Production)",f:"Psycholinguistics",c:"Levelt et al. (1999)",s:[],st:"none",
+ d:"Speech production as a multi-stage, parallel process.",
+ how:"No identified LLM work."},
+{n:"Interactive Two-Step Model",f:"Psycholinguistics",c:"Goldrick & Rapp (2007)",s:[],st:"none",
+ d:"Lexical selection and phonological encoding interact probabilistically during speech generation.",
+ how:"No identified LLM work."},
+];
+
+const grid = document.getElementById("grid");
+const countEl = document.getElementById("count");
+let fField = "all", fStage = "all", fStatus = "all", query = "";
+
+function render(){
+  const q = query.trim().toLowerCase();
+  const shown = THEORIES.filter(t =>
+    (fField === "all" || t.f === fField) &&
+    (fStage === "all" || t.s.includes(fStage)) &&
+    (fStatus === "all" || t.st === fStatus) &&
+    (!q || (t.n + " " + t.c + " " + t.d + " " + t.how + " " + t.f).toLowerCase().includes(q))
+  );
+  countEl.textContent = "Showing " + shown.length + " of " + THEORIES.length + " theories";
+  grid.innerHTML = shown.map(t => {
+    const i = THEORIES.indexOf(t);
+    const stages = t.s.length ? t.s.map(s => '<span class="pill">' + s + "</span>").join("") : '<span class="pill">No stage yet — opportunity</span>';
+    return '<div class="card" onclick="openModal(' + i + ')" style="border-top:3px solid ' + FIELD_COLORS[t.f] + '">' +
+      '<span class="status ' + STATUS_CLASS[t.st] + '">' + STATUS_LABEL[t.st] + "</span>" +
+      '<div class="head"><h3>' + t.n + "</h3></div>" +
+      '<div class="cite">' + t.c + ' · <span style="color:' + FIELD_COLORS[t.f] + ';font-weight:700">' + t.f + "</span></div>" +
+      "<p>" + t.d + "</p>" +
+      '<div class="stages-row">' + stages + "</div></div>";
+  }).join("");
+}
+
+function setChips(cls, attr, val){
+  document.querySelectorAll("." + cls).forEach(c => {
+    const on = c.dataset[attr] === val;
+    c.classList.toggle("active", on);
+    if(on && c.dataset[attr] !== "all"){
+      const col = attr === "field" ? FIELD_COLORS[val] : "var(--accent)";
+      c.style.background = col; c.style.borderColor = col;
+    } else { c.style.background = on ? "var(--accent)" : ""; c.style.borderColor = on ? "var(--accent)" : ""; }
+  });
+}
+document.querySelectorAll(".field-chip").forEach(c => c.onclick = () => { fField = c.dataset.field; setChips("field-chip","field",fField); render(); });
+document.querySelectorAll(".stage-chip").forEach(c => c.onclick = () => { fStage = c.dataset.stage; setChips("stage-chip","stage",fStage); render(); });
+document.querySelectorAll(".status-chip").forEach(c => c.onclick = () => { fStatus = c.dataset.status; setChips("status-chip","status",fStatus); render(); });
+document.getElementById("q").addEventListener("input", e => { query = e.target.value; render(); });
+setChips("field-chip","field","all"); setChips("stage-chip","stage","all"); setChips("status-chip","status","all");
+
+function jumpToStage(stage){
+  fStage = stage; setChips("stage-chip","stage",stage);
+  fField = "all"; setChips("field-chip","field","all");
+  fStatus = "all"; setChips("status-chip","status","all");
+  render();
+  document.getElementById("explorer").scrollIntoView({behavior:"smooth"});
+}
+
+function openModal(i){
+  const t = THEORIES[i];
+  const stages = t.s.length ? t.s.join(" · ") : "None yet — flagged as an opportunity";
+  document.getElementById("modal-content").innerHTML =
+    '<span class="badge" style="background:' + FIELD_COLORS[t.f] + ';color:#14161d">' + t.f + " Psychology</span>" +
+    "<h3>" + t.n + "</h3>" +
+    '<div class="cite">' + t.c + "</div>" +
+    "<h4>The theory</h4><p>" + t.d + "</p>" +
+    "<h4>In LLM research</h4><p>" + t.how + "</p>" +
+    "<h4>Lifecycle stage</h4><p>" + stages + "</p>" +
+    "<h4>Exploration status</h4><p>" + STATUS_LABEL[t.st] + " — " + STATUS_DESC[t.st] + "</p>";
+  document.getElementById("modal-bg").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeModal(){
+  document.getElementById("modal-bg").classList.remove("open");
+  document.body.style.overflow = "";
+}
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+// coverage bars (from the survey's Appendix A, Tables 1-3)
+const COVERAGE = [
+  ["Developmental", 1, 5, 0],
+  ["Cognitive", 5, 3, 1],
+  ["Behavioral", 1, 2, 1],
+  ["Social", 5, 2, 11],
+  ["Personality", 3, 1, 4],
+  ["Psycholinguistics", 1, 2, 5],
+];
+const MAXN = 18;
+document.getElementById("bars").innerHTML = COVERAGE.map(([name, a, b, c]) => {
+  const total = a + b + c;
+  const seg = (v, col) => v ? '<div class="seg" style="width:' + (v / MAXN * 100) + '%;background:' + col + '">' + v + "</div>" : "";
+  return '<div class="bar-row"><div class="lbl">' + name + ' <span style="color:var(--faint)">(' + total + ")</span></div>" +
+    '<div class="bar-track">' + seg(a, "var(--soc)") + seg(b, "var(--cog)") + seg(c, "var(--dev)") + "</div></div>";
+}).join("");
+
+function toggleAcc(btn){ btn.parentElement.classList.toggle("open"); }
+
+document.getElementById("theory-total").textContent = THEORIES.length;
+render();
+</script>
+</body>
+</html>
