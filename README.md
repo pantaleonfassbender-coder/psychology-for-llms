@@ -82,13 +82,13 @@ Everything the page renders comes from the `THEORIES` array inside the `<script>
 Two small lookup objects sit alongside it:
 
 - `FIELD_COLORS` — maps each subfield to its CSS custom property, so a new subfield needs a colour variable in `:root` as well as an entry here.
-- `COVERAGE` — the stacked-bar data, as `[subfield, established, emerging, untapped]`.
+- `COVERAGE_ORDER` — the subfields in the order the coverage bars should read. Editorial, not alphabetical, which is the only reason it is written out by hand; the bar counts themselves are computed from `THEORIES`.
 
 ### Adding or editing a theory
 
-1. Add an object to `THEORIES`. The card grid, the modal, the search index, the stage and status filters, and the hero's theory counter all derive from the array — none of them need touching.
-2. If it belongs to a new subfield, add a `--colour` variable in `:root`, an entry in `FIELD_COLORS`, a `.field-chip` in the explorer toolbar, and a row in `COVERAGE`.
-3. `COVERAGE` is **hand-entered from the survey's appendix**, not recomputed from `THEORIES`, so update it in the same pass if the status counts change.
+1. Add an object to `THEORIES`. The card grid, the modal, the search index, the stage and status filters, the coverage chart, and the hero's theory counter all derive from the array — none of them need touching.
+2. If it belongs to a new subfield, add a `--colour` variable in `:root`, an entry in `FIELD_COLORS`, a `.field-chip` in the explorer toolbar, and its position in `COVERAGE_ORDER`. A subfield missing from `COVERAGE_ORDER` still gets cards, but no bar.
+3. The prose is not derived. The coverage lead names social psychology as the starkest gap ("11 of 18"), so check it still reads true after a status change.
 
 ---
 
@@ -124,7 +124,7 @@ Roughly: styles in `<head>`, the static sections (framework, explorer shell, cov
 ## Notes & caveats
 
 - **Summaries, not sources.** Theory definitions, exploration statuses, and cited applications are condensed from the survey and its appendix. Where the survey flags a claim as contested, the card says so — but the paper is the authority.
-- **The coverage chart is independent of the cards.** `COVERAGE` is transcribed from the appendix rather than computed from `THEORIES`, so its per-subfield splits can drift from the card data if one is edited without the other.
+- **The coverage chart counts the cards.** It is computed from `THEORIES` rather than transcribed a second time, so it cannot disagree with the grid. An earlier hand-entered version had drifted: it counted one psycholinguistics theory under cognitive, and scored another as untapped where its card says emerging. Correcting a status now means correcting the card's `st`, and the bar follows.
 - **The hero's "40 theories" is a placeholder.** It is overwritten at load with `THEORIES.length`; the number in the markup is only what shows before the script runs.
 - **No analytics, no tracking, no external requests.** Fonts are system stacks; nothing is fetched at runtime.
 

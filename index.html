@@ -601,15 +601,17 @@ function closeModal(){
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
 
 // coverage bars (from the survey's Appendix A, Tables 1-3)
-const COVERAGE = [
-  ["Developmental", 1, 5, 0],
-  ["Cognitive", 5, 3, 1],
-  ["Behavioral", 1, 2, 1],
-  ["Social", 5, 2, 11],
-  ["Personality", 3, 1, 4],
-  ["Psycholinguistics", 1, 2, 5],
-];
-const MAXN = 18;
+// Bar order is editorial, not alphabetical, so it stays written out. The counts
+// are derived from THEORIES: transcribing them a second time by hand let the
+// chart drift from the cards it summarizes, which is how a theory ended up
+// counted under one subfield here and another one there.
+const COVERAGE_ORDER = ["Developmental","Cognitive","Behavioral","Social","Personality","Psycholinguistics"];
+const COVERAGE = COVERAGE_ORDER.map(name => {
+  const inField = THEORIES.filter(t => t.f === name);
+  const n = st => inField.filter(t => t.st === st).length;
+  return [name, n("full"), n("some"), n("none")];
+});
+const MAXN = Math.max(...COVERAGE.map(([, a, b, c]) => a + b + c));
 document.getElementById("bars").innerHTML = COVERAGE.map(([name, a, b, c]) => {
   const total = a + b + c;
   const seg = (v, col) => v ? '<div class="seg" style="width:' + (v / MAXN * 100) + '%;background:' + col + '">' + v + "</div>" : "";
