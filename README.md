@@ -125,7 +125,7 @@ Roughly: styles in `<head>`, the static sections (framework, explorer shell, cov
 
 - **Summaries, not sources.** Theory definitions, exploration statuses, and cited applications are condensed from the survey and its appendix. Where the survey flags a claim as contested, the card says so — but the paper is the authority.
 - **The coverage chart counts the cards.** It is computed from `THEORIES` rather than transcribed a second time, so it cannot disagree with the grid. An earlier hand-entered version had drifted: it counted one psycholinguistics theory under cognitive, and scored another as untapped where its card says emerging. Correcting a status now means correcting the card's `st`, and the bar follows.
-- **The hero's "40 theories" is a placeholder.** It is overwritten at load with `THEORIES.length`; the number in the markup is only what shows before the script runs.
+- **The hero's theory count is written twice.** The markup carries the current figure so the stat is right before the script runs, and the script then overwrites it with `THEORIES.length`. Only the pre-script flash is at stake if the two disagree, but keep them in step when adding a theory.
 - **No analytics, no tracking, no external requests.** Fonts are system stacks; nothing is fetched at runtime.
 
 ---
